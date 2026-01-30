@@ -3,29 +3,57 @@ const { successResponse, errorResponse } = require("../utils/response");
 
 const createVehicle = async (req, res) => {
   try {
-    const { capacity } = req.body;
-    // capacity empty
-    if (capacity === undefined) {
-      return errorResponse(res, 400, "capacity is required");
+    const {
+      vehicle_code,
+      vehicle_role,
+      capacity,
+      max_range_km,
+      start_lat,
+      start_lng,
+      zone_id,
+    } = req.body;
+
+    if (!vehicle_code) {
+      return errorResponse(res, 400, "vehicle_code is required");
     }
 
-    // capacity abc
-    if (typeof capacity !== "number") {
-      return errorResponse(res, 400, "capacity must be a number");
+    if (!["PICKUP", "LINE_HAUL", "DELIVERY"].includes(vehicle_role)) {
+      return errorResponse(res, 400, "invalid vehicle_role");
     }
 
-    // capacity negative
-    if (capacity <= 0) {
-      return errorResponse(res, 400, "capacity must be greater than 0");
+    if (typeof capacity !== "number" || capacity <= 0) {
+      return errorResponse(res, 400, "capacity must be positive number");
+    }
+
+    if (typeof max_range_km !== "number" || max_range_km <= 0) {
+      return errorResponse(res, 400, "max_range_km must be positive number");
     }
 
     const query = `
-        INSERT INTO vehicles(capacity)
-        VALUES ($1)
+        INSERT INTO vehicles (
+          vehicle_code,
+          vehicle_role,
+          capacity,
+          max_range_km,
+          start_lat,
+          start_lng,
+          zone_id,
+          status
+        )
+        VALUES ($1,$2,$3,$4,$5,$6,$7,'AVAILABLE')
         RETURNING *
-        `;
+      `;
 
-    const result = await pool.query(query, [capacity]);
+    const result = await pool.query(query, [
+      vehicle_code,
+      vehicle_role,
+      capacity,
+      max_range_km,
+      start_lat,
+      start_lng,
+      zone_id,
+    ]);
+
     return successResponse(
       res,
       201,
@@ -44,7 +72,7 @@ const createVehicle = async (req, res) => {
 
 const getAllVehicles = async (req, res) => {
   try {
-    const query = "SELECT * FROM vehicles ORDER BY created_at DESC";
+    const query = "SELECT vehicle_code, vehicle_role, capacity, max_range_km, zone_id FROM vehicles ORDER BY created_at DESC";
     const result = await pool.query(query);
     return successResponse(res, 200, "Vehicles fetched successfully", {
       count: result.rows.length,

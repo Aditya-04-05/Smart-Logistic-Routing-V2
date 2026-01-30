@@ -31,12 +31,14 @@ const runAssignment = async (req, res) => {
     `);
 
     // 2️⃣ Fetch AVAILABLE vehicles
+    // only DELIVERY vehicles for now
     const vehiclesResult = await pool.query(`
-      SELECT *
-      FROM vehicles
-      WHERE status = 'AVAILABLE'
-      ORDER BY created_at ASC
-    `);
+  SELECT *
+  FROM vehicles
+  WHERE status = 'AVAILABLE'
+    AND vehicle_role = 'DELIVERY'
+  ORDER BY created_at ASC
+`);
 
     let remainingOrders = [...ordersResult.rows];
     const assignmentPlan = [];
